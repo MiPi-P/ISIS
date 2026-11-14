@@ -46,21 +46,23 @@ int main(int argc, char** argv) {
     std::printf("Node %u joined\n", static_cast<unsigned>(id));
     std::fflush(stdout);
 
-    const auto start = Clock::now();
-    // Each turn is one state of the exchange: send or wait for that sender.
-    for (unsigned char turn = 0; turn < 3; ++turn) {
-        if (turn == id) {
-            check(sendto(fd, &id, sizeof(id), 0,
-                         reinterpret_cast<const sockaddr*>(&group), sizeof(group)), "sendto");
-        } else {
-            unsigned char sender = 255;
-            int size;
-            do {
-                size = recvfrom(fd, &sender, sizeof(sender), MSG_TRUNC, nullptr, nullptr);
-                check(size, "recvfrom");
-            } while (size != 1 || sender != turn);
+    for (int round = 0; round < 10; ++round) {
+        const auto start = Clock::now();
+        // Each turn is one state of the exchange: send or wait for that sender.
+        for (unsigned char turn = 0; turn < 3; ++turn) {
+            if (turn == id) {
+                check(sendto(fd, &id, sizeof(id), 0,
+                             reinterpret_cast<const sockaddr*>(&group), sizeof(group)), "sendto");
+            } else {
+                unsigned char sender = 255;
+                int size;
+                do {
+                    size = recvfrom(fd, &sender, sizeof(sender), MSG_TRUNC, nullptr, nullptr);
+                    check(size, "recvfrom");
+                } while (size != 1 || sender != turn);
+            }
         }
+        print_time(start);
     }
-    print_time(start);
     close(fd);
 }
